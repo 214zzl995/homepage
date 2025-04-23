@@ -17,6 +17,7 @@ jobs:
           npm install -g corepack
           corepack enable
           corepack prepare pnpm@latest --activate
+          NUXT_TELEMETRY_DISABLED=1 pnpm install --frozen-lockfile
 
       - name: Build project
         env:
