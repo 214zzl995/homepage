@@ -11,13 +11,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Enable corepack and install dependencies
-        run: >
+        run: |
           corepack enable
-
           corepack prepare pnpm@latest --activate
-
           pnpm install --frozen-lockfile --prefer-offline
+
       - name: Build project
         env:
           NEXT_TELEMETRY_DISABLED: 1
@@ -25,20 +25,20 @@ jobs:
           NEXT_PUBLIC_VERSION: ${{ github.run_number }}
           NEXT_PUBLIC_REVISION: ${{ github.sha }}
         run: pnpm run build
+
       - name: Package build artifacts to tar.gz
-        run: >
+        run: |
           mkdir -p package
-
           cp -r .next/standalone package/
-
           cp -r .next/static package/
-
           tar czf build-artifacts.tar.gz -C package .
+
       - name: Upload artifact for workflow storage
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
           path: build-artifacts.tar.gz
+
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -48,11 +48,13 @@ jobs:
         with:
           name: build-artifacts
           path: .
+
       - name: Create GitHub Release and upload asset (build tarball)
         uses: ncipollo/release-action@v1
         with:
-          tag: latest
+          tag: latest                        
           name: Release latest
+          allowUpdates: true                
           files: build-artifacts.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.PUSH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
