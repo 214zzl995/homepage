@@ -1,0 +1,58 @@
+name: Build and Release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:22.13.1-alpine
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Enable corepack and install dependencies
+        run: >
+          corepack enable
+
+          corepack prepare pnpm@latest --activate
+
+          pnpm install --frozen-lockfile --prefer-offline
+      - name: Build project
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_BUILDTIME: ${{ github.run_started_at }}
+          NEXT_PUBLIC_VERSION: ${{ github.run_number }}
+          NEXT_PUBLIC_REVISION: ${{ github.sha }}
+        run: pnpm run build
+      - name: Package build artifacts to tar.gz
+        run: >
+          mkdir -p package
+
+          cp -r .next/standalone package/
+
+          cp -r .next/static package/
+
+          tar czf build-artifacts.tar.gz -C package .
+      - name: Upload artifact for workflow storage
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: build-artifacts.tar.gz
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .
+      - name: Create GitHub Release and upload asset (build tarball)
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Release latest
+          files: build-artifacts.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUSH_TOKEN }}
