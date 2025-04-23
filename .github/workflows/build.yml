@@ -50,12 +50,15 @@ jobs:
           name: build-artifacts
           path: .
 
+      - name: List artifact files
+        run: ls -lh artifacts
+
       - name: Create GitHub Release and upload asset (build tarball)
         uses: ncipollo/release-action@v1
         with:
           tag: latest                        
           name: Release latest
           allowUpdates: true                
-          files: build-artifacts.tar.gz
+          artifacts: artifacts/build-artifacts.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
